@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Board Game Insert Designer</title>
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #202a35;
+    --muted: #657384;
+    --line: #dce3e9;
+    --paper: #f3f6f8;
+    --white: #fff;
+    --blue: #176b87;
+    --blue-dark: #11566d;
+    --green: #176b47;
+    --red: #a43b38;
+    --shadow: 0 3px 14px #2030400b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header, main { width: min(1180px, calc(100% - 36px)); margin: auto; }
+  header { padding: 30px 0 19px; }
+  h1 { margin: 0; font-size: clamp(1.55rem, 3vw, 2rem); letter-spacing: -.03em; }
+  header p { margin: 5px 0 0; color: var(--muted); }
+  main { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; padding-bottom: 36px; align-items: start; }
+  .column { display: grid; gap: 16px; }
+  .card {
+    background: var(--white); border: 1px solid var(--line); border-radius: 13px;
+    padding: 20px; box-shadow: var(--shadow);
+  }
+  h2 { margin: 0 0 15px; font-size: 1.05rem; }
+  label { display: block; color: #455363; font-size: .88rem; font-weight: 600; }
+  input, select {
+    width: 100%; margin-top: 5px; padding: 10px 11px; border: 1px solid #cbd5de;
+    border-radius: 8px; background: white; color: var(--ink); font: inherit;
+  }
+  input:focus, select:focus { outline: 2px solid #83c4d5; border-color: var(--blue); }
+  .box-grid { display: grid; grid-template-columns: repeat(3, 1fr) 110px; gap: 12px; }
+  .component-grid { display: grid; grid-template-columns: 1.3fr 1fr .7fr auto; gap: 10px; align-items: end; }
+  button {
+    border: 0; border-radius: 8px; padding: 10px 14px; font: inherit; font-weight: 700;
+    cursor: pointer; background: var(--blue); color: white;
+  }
+  button:hover { background: var(--blue-dark); }
+  button:focus-visible { outline: 3px solid #82c5d6; outline-offset: 2px; }
+  .add-button { white-space: nowrap; }
+  .generate { width: 100%; padding: 12px; font-size: 1rem; }
+  .helper { margin: 10px 0 0; color: var(--muted); font-size: .83rem; }
+  .component-list { display: grid; gap: 8px; margin-top: 15px; }
+  .component-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 10px 12px; background: #f6f8fa; border: 1px solid #e7edf1; border-radius: 8px;
+  }
+  .component-row small { display: block; color: var(--muted); }
+  .remove {
+    padding: 6px 9px; background: #fff; color: #8b3735; border: 1px solid #e3c9c8;
+    font-size: .82rem;
+  }
+  .remove:hover { background: #fff3f2; }
+  .empty { color: var(--muted); font-size: .9rem; margin: 0; }
+  .status { padding: 12px 14px; border-radius: 8px; background: #f1f4f6; color: #566575; }
+  .status.good { background: #eaf6ef; color: var(--green); }
+  .status.bad { background: #fff0ef; color: var(--red); }
+  .status ul { margin: 6px 0 0; padding-left: 19px; }
+  .stats { margin: 10px 0 0; color: var(--muted); font-size: .88rem; }
+  .preview-wrap {
+    min-height: 235px; display: grid; place-items: center; padding: 12px;
+    background: #f6f8fa; border: 1px dashed #ccd7df; border-radius: 9px;
+  }
+  svg { display: block; width: 100%; max-height: 390px; }
+  .download-list { display: grid; gap: 8px; margin: 13px 0; }
+  .download-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 9px 10px; border: 1px solid #e5eaee; border-radius: 8px; font-size: .88rem;
+  }
+  .download-item a { color: var(--blue); font-weight: 700; text-decoration: none; white-space: nowrap; }
+  .download-item a:hover { text-decoration: underline; }
+  .download-all { width: 100%; }
+  .disabled { opacity: .5; pointer-events: none; }
+  .fine-print { margin: 12px 0 0; color: var(--muted); font-size: .79rem; }
+  @media (max-width: 780px) {
+    main { grid-template-columns: 1fr; }
+    .box-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 500px) {
+    header, main { width: min(100% - 24px, 1180px); }
+    .card { padding: 16px; }
+    .component-grid { grid-template-columns: 1fr 1fr; }
+    .component-grid button { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Board Game Insert Designer</h1>
+  <p>Plan a simple insert from your box and component list.</p>
+</header>
+
+<main>
+  <section class="column" aria-label="Design inputs">
+    <div class="card">
+      <h2>Box details</h2>
+      <div class="box-grid">
+        <label for="boxLength">Length
+          <input id="boxLength" type="number" min="1" step="1" value="280">
+        </label>
+        <label for="boxWidth">Width
+          <input id="boxWidth" type="number" min="1" step="1" value="200">
+        </label>
+        <label for="boxHeight">Height
+          <input id="boxHeight" type="number" min="1" step="1" value="60">
+        </label>
+        <label for="unit">Units
+          <select id="unit">
+            <option value="mm">mm</option>
+            <option value="cm">cm</option>
+            <option value="in">in</option>
+          </select>
+        </label>
+      </div>
+      <p class="helper">Enter the usable interior dimensions of your box.</p>
+    </div>
+
+    <div class="card">
+      <h2>Components</h2>
+      <div class="component-grid">
+        <label for="componentName">Group name
+          <input id="componentName" type="text" placeholder="e.g. Blue player">
+        </label>
+        <label for="componentType">Type
+          <select id="componentType">
+            <option>Cards</option><option>Tokens</option><option>Dice</option><option>Figures</option>
+          </select>
+        </label>
+        <label for="componentCount">Count
+          <input id="componentCount" type="number" min="1" step="1" value="10">
+        </label>
+        <button class="add-button" id="addButton" type="button">Add group</button>
+      </div>
+      <div class="component-list" id="componentList" aria-live="polite"></div>
+      <p class="helper">Dimensions are estimates based on standard component sizes; measure unusual pieces before printing.</p>
+    </div>
+
+    <button class="generate" id="generateButton" type="button">Generate layout</button>
+  </section>
+
+  <section class="column" aria-label="Preview and downloads">
+    <div class="card">
+      <h2>Status</h2>
+      <div class="status" id="status" aria-live="polite">Add components, then generate a layout to see your preview.</div>
+      <p class="stats" id="stats"></p>
+    </div>
+
+    <div class="card">
+      <h2>Top-down preview</h2>
+      <div class="preview-wrap" id="preview">
+        <p class="empty">Your layout preview will appear here.</p>
+      </div>
+      <p class="fine-print">Preview shows estimated compartment footprints, not wall thickness.</p>
+    </div>
+
+    <div class="card">
+      <h2>Export</h2>
+      <p class="empty">Download your files and print your design!</p>
+      <div class="download-list" id="downloadList">
+        <p class="empty">Generate a layout to create STL files.</p>
+      </div>
+      <button class="download-all disabled" id="downloadAll" type="button" aria-disabled="true">Download all as one STL</button>
+      <p class="fine-print">STLs use millimeters. Compartments are exported as open-top trays with a 2 mm base and 2 mm walls.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  let components = [];
+  let generated = null;
+  const colors = ["#8cc9d7", "#e8bd72", "#a9c89c", "#c3a8d7", "#e69b8b", "#88a9d2"];
+
+  function renderComponents() {
+    const list = $("componentList");
+    list.replaceChildren();
+    if (!components.length) {
+      const p = document.createElement("p");
+      p.className = "empty";
+      p.textContent = "No component groups added yet.";
+      list.append(p);
+      return;
+    }
+    components.forEach((item, index) => {
+      const row = document.createElement("div");
+      row.className = "component-row";
+      const text = document.createElement("span");
+      const name = document.createElement("strong");
+      name.textContent = item.name;
+      const detail = document.createElement("small");
+      detail.textContent = `${item.count} ${item.type.toLowerCase()}`;
+      text.append(name, detail);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "remove";
+      button.textContent = "Remove";
+      button.setAttribute("aria-label", `Remove ${item.name}`);
+      button.addEventListener("click", () => { components.splice(index, 1); renderComponents(); });
+      row.append(text, button);
+      list.append(row);
+    });
+  }
+
+  $("addButton").addEventListener("click", () => {
+    const count = Math.floor(Number($("componentCount").value));
+    if (!Number.isFinite(count) || count < 1) {
+      $("componentCount").focus();
+      return;
+    }
+    const type = $("componentType").value;
+    const name = $("componentName").value.trim() || `${type} group ${components.length + 1}`;
+    components.push({ name, type, count });
+    $("componentName").value = "";
+    $("componentCount").value = "10";
+    renderComponents();
+  });
+
+  function boxInMm() {
+    const factor = { mm: 1, cm: 10, in: 25.4 }[$("unit").value];
+    return {
+      length: Number($("boxLength").value) * factor,
+      width: Number($("boxWidth").value) * factor,
+      height: Number($("boxHeight").value) * factor
+    };
+  }
+
+  // Approximate footprints include modest clearance for handling.
+  function estimate(item) {
+    let w, d, h, per;
+
+    if (item.type === "Cards") {
+      const padding = 1; // mm on each side
+      const cardThickness = 0.32; // mm per card
+
+      return {
+        w: Math.ceil(item.count * cardThickness + 2 * padding),
+        d: 88.9 + 2 * padding,
+        h: 63.5 + 2 * padding,
+        areaFactor: 1
+      };
+    }
+
+    if (item.type === "Tokens") {
+      w = 50;
+      d = 50;
+      h = Math.max(16, Math.ceil(item.count / 25) * 7 + 5);
+      per = 25;
+    } else if (item.type === "Dice") {
+      w = 42;
+      d = 42;
+      h = Math.max(18, Math.ceil(item.count / 4) * 18 + 4);
+      per = 4;
+    } else {
+      w = 60;
+      d = 60;
+      h = Math.max(25, Math.ceil(item.count / 2) * 30 + 5);
+      per = 2;
+    }
+
+    const areaFactor = Math.max(1, Math.ceil(item.count / per));
+    const scale = Math.sqrt(areaFactor);
+    return {
+      w: Math.ceil(w * scale),
+      d: Math.ceil(d * scale),
+      h: Math.ceil(h),
+      areaFactor
+    };
+  }
+
+
+  function pack(items, box) {
+    const gap = 2, margin = 2;
+    const placed = [];
+    let x = margin, y = margin, rowDepth = 0;
+    for (const item of items) {
+      const { w, d } = item;
+      if (w + 2 * margin > box.length || d + 2 * margin > box.width) {
+        item.error = `${item.name}: estimated footprint (${w} × ${d} mm) is larger than the box floor.`;
+        continue;
+      }
+      if (x + w > box.length - margin) {
+        x = margin;
+        y += rowDepth + gap;
+        rowDepth = 0;
+      }
+      if (y + d > box.width - margin) {
+        item.error = `${item.name}: not enough floor area for the estimated layout.`;
+        continue;
+      }
+      item.x = x; item.y = y;
+      placed.push(item);
+      x += w + gap;
+      rowDepth = Math.max(rowDepth, d);
+    }
+    return placed;
+  }
+
+  function makeSvg(box, placed) {
+    const scale = Math.min(680 / box.length, 390 / box.width);
+    const sw = box.length * scale, sh = box.width * scale;
+    let markup = `<svg viewBox="0 0 ${sw + 24} ${sh + 24}" role="img" aria-label="Top-down box layout preview">
+      <rect x="12" y="12" width="${sw}" height="${sh}" rx="5" fill="#fff" stroke="#34495a" stroke-width="2"/>`;
+    placed.forEach((item, i) => {
+      const x = 12 + item.x * scale, y = 12 + item.y * scale;
+      const w = item.w * scale, h = item.d * scale;
+      const label = escapeHtml(item.name);
+      markup += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="${colors[i % colors.length]}" fill-opacity=".78" stroke="#3c5564" stroke-width="1"/>`;
+      if (w > 38 && h > 23) {
+        markup += `<text x="${x + w / 2}" y="${y + h / 2 - 2}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.min(12, Math.max(8, Math.min(w, h) / 6))}" fill="#182b36">${label}</text>`;
+        markup += `<text x="${x + w / 2}" y="${y + h / 2 + 10}" text-anchor="middle" font-size="8" fill="#344b58">${item.w} × ${item.d} mm</text>`;
+      }
+    });
+    markup += `<text x="12" y="${sh + 21}" font-size="9" fill="#657384">Box floor: ${Math.round(box.length)} × ${Math.round(box.width)} mm</text></svg>`;
+    return markup;
+  }
+
+  function escapeHtml(text) {
+    return String(text).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  // ASCII STL tray made from a base and four wall solids. The slight overlap
+  // is intentional so slicers can merge the pieces into one watertight shell.
+  function boxTriangles(x0, y0, z0, x1, y1, z1) {
+    const p = [
+      [x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],
+      [x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]
+    ];
+    const faces = [[0,2,1],[0,3,2],[0,1,5],[0,5,4],[1,2,6],[1,6,5],
+      [2,3,7],[2,7,6],[3,0,4],[3,4,7],[4,5,6],[4,6,7]];
+    return faces.map(f => [p[f[0]], p[f[1]], p[f[2]]]);
+  }
+
+  function trayStl(item, box) {
+    const t = 2, height = Math.min(item.h, box.height);
+    const x = item.x, y = item.y, w = item.w, d = item.d;
+    const solids = [
+      [x,y,0,x+w,y+d,t],
+      [x,y,t,x+w,y+t,height],
+      [x,y+d-t,t,x+w,y+d,height],
+      [x,y+t,t,x+t,y+d-t,height],
+      [x+w-t,y+t,t,x+w,y+d-t,height]
+    ];
+    const triangles = solids.flatMap(a => boxTriangles(...a));
+    let stl = `solid ${safeName(item.name)}\n`;
+    for (const tri of triangles) {
+      stl += " facet normal 0 0 0\n  outer loop\n";
+      for (const v of tri) stl += `   vertex ${v.map(n => n.toFixed(3)).join(" ")}\n`;
+      stl += "  endloop\n endfacet\n";
+    }
+    return stl + `endsolid ${safeName(item.name)}\n`;
+  }
+
+  function safeName(value) {
+    return String(value).replace(/[^a-z0-9_-]+/gi, "_").replace(/^_+|_+$/g, "") || "compartment";
+  }
+
+  function download(content, filename) {
+    const blob = new Blob([content], { type: "model/stl" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function formatBytes(bytes) {
+    return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
+  $("generateButton").addEventListener("click", () => {
+    const box = boxInMm();
+    const problems = [];
+    if (![box.length, box.width, box.height].every(v => Number.isFinite(v) && v > 0)) {
+      $("status").className = "status bad";
+      $("status").textContent = "Enter a valid positive length, width, and height.";
+      $("stats").textContent = "";
+      return;
+    }
+    if (!components.length) problems.push("Add at least one component group.");
+    const items = components.map(item => ({ ...item, ...estimate(item) }));
+    const placed = pack(items, box);
+    for (const item of items) {
+      if (item.h > box.height) item.error = `${item.name}: estimated compartment height (${item.h} mm) exceeds the box height (${Math.round(box.height)} mm).`;
+      if (item.error && !problems.includes(item.error)) problems.push(item.error);
+    }
+    const usedArea = placed.reduce((sum, item) => sum + item.w * item.d, 0);
+    const floorArea = box.length * box.width;
+    const volume = placed.reduce((sum, item) => sum + item.w * item.d * Math.min(item.h, box.height), 0);
+    const boxVolume = floorArea * box.height;
+    const percent = boxVolume ? Math.min(100, volume / boxVolume * 100) : 0;
+    $("status").className = `status ${problems.length ? "bad" : "good"}`;
+    $("status").replaceChildren();
+    const headline = document.createElement("strong");
+    headline.textContent = problems.length ? "Some issues need attention" : "Looks good";
+    $("status").append(headline);
+    if (problems.length) {
+      const ul = document.createElement("ul");
+      problems.forEach(problem => { const li = document.createElement("li"); li.textContent = problem; ul.append(li); });
+      $("status").append(ul);
+    }
+    $("stats").textContent = `Estimated component volume: ${percent.toFixed(1)}% of the box (${Math.max(0, 100 - percent).toFixed(1)}% remaining). Floor area used: ${floorArea ? (usedArea / floorArea * 100).toFixed(1) : 0}%.`;
+    $("preview").innerHTML = placed.length ? makeSvg(box, placed) : '<p class="empty">No compartments fit in the box.</p>';
+
+    generated = { box, placed };
+    const list = $("downloadList");
+    list.replaceChildren();
+    if (!placed.length) {
+      const p = document.createElement("p"); p.className = "empty"; p.textContent = "No STL files available until a compartment fits."; list.append(p);
+      $("downloadAll").classList.add("disabled");
+      $("downloadAll").setAttribute("aria-disabled", "true");
+      return;
+    }
+    const files = placed.map((item, i) => ({
+      name: `${String(i + 1).padStart(2, "0")}-${safeName(item.name)}.stl`,
+      content: trayStl(item, box)
+    }));
+    files.forEach(file => {
+      const row = document.createElement("div");
+      row.className = "download-item";
+      const name = document.createElement("span"); name.textContent = file.name;
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(new Blob([file.content], { type: "model/stl" }));
+      link.download = file.name;
+      link.textContent = `Download · ${formatBytes(new Blob([file.content]).size)}`;
+      row.append(name, link); list.append(row);
+    });
+    $("downloadAll").classList.remove("disabled");
+    $("downloadAll").setAttribute("aria-disabled", "false");
+    generated.files = files;
+  });
+
+  $("downloadAll").addEventListener("click", () => {
+    if (!generated?.files?.length) return;
+    download(generated.files.map(f => f.content).join("\n"), "board-game-insert-combined.stl");
+  });
+
+  renderComponents();
+})();
+</script>
+</body>
+</html>
